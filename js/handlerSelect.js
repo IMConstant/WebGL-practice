@@ -20,7 +20,8 @@ export function getType(){
     
     const config = {
         triangles: gl.TRIANGLES,
-        lines: gl.LINES
+        lines: gl.LINES,
+        triangleStrip: gl.TRIANGLE_STRIP
     }
     
     return config[select.value];

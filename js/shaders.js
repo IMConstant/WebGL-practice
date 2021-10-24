@@ -49,8 +49,10 @@ const vsCode =
     'attribute vec3 coordinates;' +
     'attribute vec4 color;' +
     'varying vec4 vColor;' +
+    'uniform float resolution;' +
     'void main(void) {' +
-    ' gl_Position = vec4(coordinates / 3.0, 1.0);' +
+    ' gl_Position = vec4(coordinates / 2.0, 1.0);' +
+    'gl_Position.x *= resolution;' +
     'gl_PointSize = 10.0;'+
     'vColor = color;' +
     '}'
@@ -60,9 +62,9 @@ const fsCode =
     'uniform float iTime;' +
     'void main() {' +
     'vec4 color = vColor;' +
-    'color.a = 0.3;' +
-    'color.r *= 3.0;' +
-    'color.rgb = 0.5 * sin(iTime + color.rgb + vec3(0, 2, 7)) + 0.5;' +
+    //'color.a = 0.01;' +
+    //'color.r *= 3.0;' +
+    'color.rgb = 0.5 * cos(iTime + color.rgb + vec3(0, 2, 4)) + 0.5;' +
     'gl_FragColor = color;'  +
     '}';
 

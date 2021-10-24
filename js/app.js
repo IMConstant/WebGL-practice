@@ -31,10 +31,7 @@ let Context = {
 
 function shaderAttribute(size, type, stride, offset) {
     return {
-        'size': size,
-        'type': type,
-        'stride': stride,
-        'offset': offset
+        size, type, stride, offset
     };
 }
 
@@ -42,42 +39,34 @@ function shaderAttribute(size, type, stride, offset) {
 let timerStart = performance.now();
 
 
-function Vector3(x, y, z) {
-    return {
-        x: x,
-        y: y,
-        z: z
-    }
+function Vector(...args) {
+    const values = {};
+    
+    const points = "xyzw".split('');
+    
+    args.forEach((elem, index) => {
+        values[points[index]] = elem;
+    })
+    
+    return values;
 }
-
-
-function Vector4(x, y ,z, w) {
-    return {
-        x: x,
-        y: y,
-        z: z,
-        w: w
-    }
-}
-
 
 function Vertex(position, color) {
-    return {
-        position: position,
-        color: color
-    }
+    return { position, color }
 }
+
+
 
 
 const Colors = {
-    red: Vector4(1.0, 0.0, 0.0, 1.0),
-    green: Vector4(0.0, 1.0, 0.0, 1.0),
-    blue: Vector4(0.0, 0.0, 1.0, 1.0),
-    cyan: Vector4(0.0, 1.0, 1.0, 1.0)
+    red: Vector(1.0, 0.0, 0.0, 1.0),
+    green: Vector(0.0, 1.0, 0.0, 1.0),
+    blue: Vector(0.0, 0.0, 1.0, 1.0),
+    cyan: Vector(0.0, 1.0, 1.0, 1.0)
 }
 
 function randomColor() {
-    return Vector4(
+    return Vector(
         Math.random(),
         Math.random(),
         Math.random(),
@@ -93,7 +82,7 @@ function createRandomShape() {
     console.log(numVertices);
 
     for (let i = 0; i < numVertices; i++) {
-        vertices.push(Vector3(
+        vertices.push(Vector(
             2 * Math.random() - 1,
             2 * Math.random() - 1,
             2 * Math.random() - 1
@@ -109,17 +98,17 @@ function createCircleShape(radius) {
 
     let numVertices = 3 + Math.floor(20 * Math.random());
 
-    vertices.push(Vector3(
+    vertices.push(Vector(
         2 * Math.random() - 1,
         2 * Math.random() - 1,
         2 * Math.random() - 1
     ));
     vertices.push(randomColor());
 
-    let d = 2 * 3.14159265 / numVertices;
+    let d = 2 * Math.PI / numVertices;
 
     for (let i = 0; i < numVertices; i++) {
-        vertices.push(Vector3(
+        vertices.push(Vector(
             vertices[0].x + (radius + Math.random() * 0.1) * Math.cos(i * d + 2 * Math.random() - 1),
             vertices[0].y + (radius + Math.random() * 0.1) * Math.sin(i * d + 2 * Math.random() - 1),
             1.0
@@ -152,7 +141,7 @@ function init() {
 
 
 function update() {
-    let timerLocation = gl.getUniformLocation(Context.shaderProgram.get(), 'iTime');
+    let timerLocation = gl.getUniformLocation(Context.shaderProgram.id, 'iTime');
 
     timerStart = performance.now();
     gl.uniform1f(timerLocation, timerStart / 1000.0);

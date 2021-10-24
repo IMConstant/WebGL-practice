@@ -1,3 +1,4 @@
+
 let canvas = document.getElementById('my_Canvas');
 let gl = canvas.getContext('experimental-webgl');
 
@@ -15,7 +16,7 @@ class Shader {
                 console.log('log = ', log);
                 break;
             default:
-                throw "Undefind shader type!";
+                throw "Undefined shader type!";
         }
     }
 
@@ -25,7 +26,7 @@ class Shader {
 }
 
 
-class ShaderProgram {
+class ShaderProgram{
     constructor(vertexShader, fragmentShader) {
         this.id = gl.createProgram()
 
@@ -42,9 +43,6 @@ class ShaderProgram {
         gl.useProgram(this.id);
     }
 }
-
-
-
 
 
 const vsCode =
@@ -64,7 +62,7 @@ const fsCode =
     'vec4 color = vColor;' +
     'color.a = 0.3;' +
     'color.r *= 3.0;' +
-    //'color.rgb = 0.5 * sin(iTime + color.rgb + vec3(0, 2, 7)) + 0.5;' +
+    'color.rgb = 0.5 * sin(iTime + color.rgb + vec3(0, 2, 7)) + 0.5;' +
     'gl_FragColor = color;'  +
     '}';
 

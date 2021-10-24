@@ -1,8 +1,8 @@
 import {vsCode, fsCode, Shader, ShaderProgram} from './shaders.js';
 import {VertexBuffer} from './buffer.js'
+import {getType} from "./handlerSelect";
 
-let canvas = document.getElementById('my_Canvas');
-let gl = canvas.getContext('experimental-webgl');
+import {gl, canvas} from "./context";
 
 
 function convertObjectToArray(object, array = []) {
@@ -155,7 +155,7 @@ function update() {
     // Установите порт просмотра
     gl.viewport(0, 0, canvas.width, canvas.height);
     // Нарисуй треугольник
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, vertices.length / 2);
+    gl.drawArrays(getType(), 0, vertices.length / 2);
 }
 
 

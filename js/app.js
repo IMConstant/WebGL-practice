@@ -76,17 +76,17 @@ function randomColor() {
 }
 
 
-function createRandomShape() {
+function createRandomShape(numMin, numMax, scale = 1.0) {
     let vertices = [];
 
-    let numVertices = 3 + Math.floor(20 * Math.random());
+    let numVertices = numMin + Math.floor((numMax - numMin) * Math.random());
     console.log(numVertices);
 
     for (let i = 0; i < numVertices; i++) {
         vertices.push(Vector(
-            2 * Math.random() - 1,
-            2 * Math.random() - 1,
-            2 * Math.random() - 1
+            scale * 2 * (2 * Math.random() - 1),
+            scale * (2 * Math.random() - 1),
+            scale * (2 * Math.random() - 1)
         ));
         vertices.push(randomColor());
     }
@@ -94,18 +94,13 @@ function createRandomShape() {
     return vertices;
 }
 
-function createCircleShape(radius) {
+function createCircleShape(radius, center = Vector(0.0, 0.5, 1.0)) {
     let vertices = [];
 
-    let numVertices = 1000 + Math.floor(2000 * Math.random());
-    
-    let center = Vector(
-        2 * Math.random() - 1,
-        2 * Math.random() - 1,
-        2 * Math.random() - 1
-    );
+    let numVertices = 1000 + Math.floor(1000 * Math.random());
+
     let centerColor = randomColor();
-    centerColor.w = 0.01;
+    centerColor.w = 0.03;
 
     let d = 2 * Math.PI / numVertices;
     
@@ -113,17 +108,18 @@ function createCircleShape(radius) {
     let endColor = Colors.cyan;
 
     for (let i = 0; i < numVertices - 1; i++) {
-        vertices.push(center);
-        vertices.push(centerColor);
+        vertices.push(Vector(center.x, center.y, center.z));
+        vertices.push(Vector(centerColor.x, centerColor.y, centerColor.z, centerColor.w));
+        //vertices[vertices.length - 1].w = 0.1 * (0.5 * Math.cos(4 * i * d) + 0.5);
         
-        for (let j = 0; j < 2; j++) {
+        for (let j = 1; j >= 0; j--) {
             vertices.push(Vector(
-                vertices[0].x + (radius) * Math.random() * Math.cos((i + j) * d + 1.2 * (2 * Math.random() - 1)),
-                vertices[0].y + (radius) * Math.random() * Math.sin((i + j) * d + 1.2 * (2 * Math.random() - 1)),
+                vertices[0].x + (radius) * Math.random() * Math.cos((i + j) * d),
+                vertices[0].y + (radius) * Math.random() * Math.sin((i + j) * d),
                 1.0
             ));
             
-            let t = 0.5 * Math.cos(1.0 * (i + j) * d) + 0.5;
+            let t = 0.5 * Math.cos(2.0 * (i + j) * d) + 0.5;
             
             vertices.push(
                 Vector(
@@ -143,18 +139,46 @@ function createCircleShape(radius) {
 
 let vertices = createCircleShape(0.5 + 0.3 * Math.random());
 
-let stars = [];
+let buffers = [];
 
 
 function init() {
-    for (let i = 0; i < 40; i++) {
-        let verts = createCircleShape(0.5 + 0.3 * Math.random());
+    let verts = createCircleShape(1.2 + 0.3 * Math.random());
         
-        stars.push({
-            buffer: new VertexBuffer(convertObjectToArray(verts)),
-            size: verts / 2
-        });
+    buffers.push({
+        buffer: new VertexBuffer(convertObjectToArray(verts)),
+        size: verts.length / 2
+    });
+
+    verts = createRandomShape(1000, 2000);
+
+    buffers.push({
+        buffer: new VertexBuffer(convertObjectToArray(verts)),
+        size: verts.length / 2
+    })
+
+    //verts = createRandomShape(20, 30, 0.3);
+
+    verts = [];
+
+    let N = 30;
+    let d = 2 * Math.PI / N;
+
+    for (let i = 0; i < N; i++) {
+        verts.push(
+            Vector(
+                3 * (0.3 * Math.cos(i * d) + 0.05 * (2 * Math.random() - 1)),
+                0.3 * Math.sin(i * d) + 0.05 * (2 * Math.random() - 1),
+                1.0
+            )
+        )
+        verts.push(Colors.red);
     }
+
+    buffers.push({
+        buffer: new VertexBuffer(convertObjectToArray(verts)),
+        size: verts.length / 2
+    });
     
     let vertexBuffer = new VertexBuffer(convertObjectToArray(vertices));
 
@@ -164,13 +188,21 @@ function init() {
     Context.shaderProgram = new ShaderProgram(vertexShader, fragmentShader);
     Context.shaderProgram.bind();
 
-    let layout = shaderLayout();
-    layout['coordinates'] = shaderAttribute(3, gl.FLOAT, 28, 0);
-    layout['color'] = shaderAttribute(4, gl.FLOAT, 28, 12);
-    vertexBuffer.connectToShaderAttributes(Context.shaderProgram, layout);
-    
-    for (let i = 0; i < 40; i++) {
-        stars[i].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
+    console.log(buffers);
+}
+
+
+let layout = shaderLayout();
+layout['coordinates'] = shaderAttribute(3, gl.FLOAT, 28, 0);
+layout['color'] = shaderAttribute(4, gl.FLOAT, 28, 12);
+
+
+function drawBackground() {
+    for (let i = 0; i < 2; i++) {
+        buffers[i].buffer.bind();
+        buffers[i].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
+
+        gl.drawArrays(i === 1 ? gl.POINTS : (gl.LINES), 0, buffers[i].size);
     }
 }
 
@@ -183,22 +215,21 @@ function update() {
     gl.uniform1f(timerLocation, timerStart / 1000.0);
     gl.uniform1f(resolutionLocation, canvas.height / canvas.width);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);          // Очистить холст
-    //gl.enable(gl.DEPTH_TEST);             // Включить тест глубины
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+   
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    // Очистить бит буфера цвета
+
     gl.clear(gl.COLOR_BUFFER_BIT);
-    // Установите порт просмотра
+
     gl.viewport(0, 0, canvas.width, canvas.height);
-    // Нарисуй треугольник
-    gl.lineWidth(7);
-    
-    for (let i = 0; i < 40; i++) {
-        stars[i].buffer.bind();
-        
-        gl.drawArrays(getType(), 0, stars[i].size);
-    }
+
+    drawBackground();
+
+    buffers[2].buffer.bind();
+    buffers[2].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
+
+    gl.drawArrays(getType(), 0, buffers[2].size);
 }
 
 

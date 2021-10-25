@@ -17,10 +17,7 @@ class VertexBuffer {
 
         this.bind();
 
-        console.log(layout);
-
         for (let attribute in layout) {
-            console.log(attribute);
             let attributeLocation = gl.getAttribLocation(shaderProgram.get(), attribute);
             gl.vertexAttribPointer(attributeLocation, layout[attribute].size, layout[attribute].type, false, layout[attribute].stride, layout[attribute].offset);
             gl.enableVertexAttribArray(attributeLocation);

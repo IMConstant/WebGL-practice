@@ -51,21 +51,26 @@ const vsCode =
     'varying vec4 vColor;' +
     'uniform float resolution;' +
     'void main(void) {' +
-    ' gl_Position = vec4(coordinates / 2.0, 1.0);' +
+    ' gl_Position = vec4(coordinates / 1.0, 1.0);' +
     'gl_Position.x *= resolution;' +
-    'gl_PointSize = 10.0;'+
+    'gl_PointSize = 1.4;'+
     'vColor = color;' +
     '}'
 const fsCode =
-    'precision highp float;' +
-    'varying vec4 vColor;' +
-    'uniform float iTime;' +
-    'void main() {' +
-    'vec4 color = vColor;' +
-    //'color.a = 0.01;' +
-    //'color.r *= 3.0;' +
-    'color.rgb = 0.5 * cos(iTime + color.rgb + vec3(0, 2, 4)) + 0.5;' +
-    'gl_FragColor = color;'  +
-    '}';
+    `
+    precision highp float;
+    varying vec4 vColor;
+    uniform float iTime;
+    
+    void main() {
+    vec4 color = vColor;
+    //if (color.a != 0.0) {
+    color.a *= 0.2;
+    //}
+    //color.r *= 3.0;
+    color.rgb = 0.5 * cos(iTime + 1.0 * gl_FragCoord.xyx / vec3(1280, 720, 1280) + vec3(0, 2, 7)) + 0.5;
+    gl_FragColor = color;
+    }
+`
 
 export { vsCode, fsCode, Shader, ShaderProgram }

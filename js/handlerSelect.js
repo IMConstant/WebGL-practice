@@ -21,7 +21,8 @@ export function getType(){
     const config = {
         triangles: gl.TRIANGLES,
         lines: gl.LINES,
-        triangleStrip: gl.TRIANGLE_STRIP
+        triangleStrip: gl.TRIANGLE_STRIP,
+        lineLoop: gl.LINE_LOOP
     }
     
     return config[select.value];

@@ -22,7 +22,9 @@ export function getType(){
         triangles: gl.TRIANGLES,
         lines: gl.LINES,
         triangleStrip: gl.TRIANGLE_STRIP,
-        lineLoop: gl.LINE_LOOP
+        triangleFan: gl.TRIANGLE_FAN,
+        lineLoop: gl.LINE_LOOP,
+        points: gl.POINTS
     }
     
     return config[select.value];

@@ -11,6 +11,7 @@ class Shader {
                 this.shader = gl$2.createShader(type);
                 gl$2.shaderSource(this.shader, sourceCode);
                 gl$2.compileShader(this.shader);
+
                 let log = gl$2.getShaderInfoLog(this.shader);
                 console.log('log = ', log);
                 break;
@@ -45,16 +46,18 @@ class ShaderProgram{
 
 
 const vsCode =
-    'attribute vec3 coordinates;' +
-    'attribute vec4 color;' +
-    'varying vec4 vColor;' +
-    'uniform float resolution;' +
-    'void main(void) {' +
-    ' gl_Position = vec4(coordinates / 1.0, 1.0);' +
-    'gl_Position.x *= resolution;' +
-    'gl_PointSize = 1.4;'+
-    'vColor = color;' +
-    '}';
+    `
+    attribute vec3 coordinates;
+    attribute vec4 color;
+    varying vec4 vColor;
+    uniform float resolution;
+    void main(void) {
+    gl_Position = vec4(coordinates / 1.0, 1.0);
+    gl_Position.x *= resolution;
+    gl_PointSize = 1.7;
+    vColor = color;
+    }
+`;
 const fsCode =
     `
     precision highp float;
@@ -63,11 +66,9 @@ const fsCode =
     
     void main() {
     vec4 color = vColor;
-    //if (color.a != 0.0) {
-    color.a *= 0.2;
-    //}
-    //color.r *= 3.0;
-    color.rgb = 0.5 * cos(iTime + 1.0 * gl_FragCoord.xyx / vec3(1280, 720, 1280) + vec3(0, 2, 7)) + 0.5;
+    color.a *= 0.5;
+    //color.rgb += 0.5 * cos(iTime + vec3(2, 4, 6)) + 0.5;
+    color.rgb *= 0.5 * cos(iTime + 1.0 * gl_FragCoord.xyx / vec3(1280, 720, 1280) + vec3(0, 2, 7)) + 0.5;
     gl_FragColor = color;
     }
 `;
@@ -76,27 +77,22 @@ let canvas$1 = document.getElementById('my_Canvas');
 let gl$1 = canvas$1.getContext('experimental-webgl');
 
 class VertexBuffer {
-    constructor(vertices) {
+    constructor(vertices, attributePerVertex = 1) {
         this.buffer = gl$1.createBuffer();
         gl$1.bindBuffer(gl$1.ARRAY_BUFFER, this.buffer);
         gl$1.bufferData(gl$1.ARRAY_BUFFER, new Float32Array(vertices), gl$1.DYNAMIC_DRAW);
         gl$1.bindBuffer(gl$1.ARRAY_BUFFER, null);
 
-        this.layout = null;
-        this.attributes = [];
+        this.length = vertices.length / attributePerVertex;
     }
 
     connectToShaderAttributes(shaderProgram, layout) {
-        this.layout = layout;
-
         this.bind();
 
         for (let attribute in layout) {
             let attributeLocation = gl$1.getAttribLocation(shaderProgram.get(), attribute);
             gl$1.vertexAttribPointer(attributeLocation, layout[attribute].size, layout[attribute].type, false, layout[attribute].stride, layout[attribute].offset);
             gl$1.enableVertexAttribArray(attributeLocation);
-
-            this.attributes.push(attributeLocation);
         }
     }
 
@@ -134,7 +130,9 @@ function getType(){
         triangles: gl.TRIANGLES,
         lines: gl.LINES,
         triangleStrip: gl.TRIANGLE_STRIP,
-        lineLoop: gl.LINE_LOOP
+        triangleFan: gl.TRIANGLE_FAN,
+        lineLoop: gl.LINE_LOOP,
+        points: gl.POINTS
     };
     
     return config[select.value];
@@ -142,12 +140,8 @@ function getType(){
 
 function convertObjectToArray(object, array = []) {
     for (let key in object) {
-        if (typeof object[key] === 'object') {
-            convertObjectToArray(object[key], array);
-        }
-        else {
-            array.push(object[key]);
-        }
+        if (typeof object[key] === 'object') convertObjectToArray(object[key], array);
+        else array.push(object[key]);
     }
 
     return array;
@@ -171,7 +165,7 @@ function shaderAttribute(size, type, stride, offset) {
 }
 
 
-let timerStart = performance.now();
+let timer = performance.now();
 
 
 function Vector(...args) {
@@ -267,59 +261,48 @@ function createCircleShape(radius, center = Vector(0.0, 0.5, 1.0)) {
 }
 
 
+function createSimpleShape() {
+    let vertices = [];
+    let N = 3 + Math.floor(9 * Math.random());
+    let deltaAngle = 2 * Math.PI / N;
+    let center = Vector(0.0, -0.5);
 
-let vertices = createCircleShape(0.5 + 0.3 * Math.random());
+    for (let i = 0; i < N; i++) {
+        let position = Vector(
+            center.x + 0.3 * Math.cos(i * deltaAngle),
+            center.y + 0.3 * Math.sin(i * deltaAngle),
+            1.0
+        );
+
+        let t = 0.5 * Math.cos(i * deltaAngle) + 0.5;
+        let color = Vector(
+            Colors.cyan.x + t * (Colors.magenta.x - Colors.cyan.x),
+            Colors.cyan.y + t * (Colors.magenta.y - Colors.cyan.y),
+            Colors.cyan.z + t * (Colors.magenta.z - Colors.cyan.z),
+            0.5
+        );
+
+        vertices.push(position);
+        vertices.push(color);
+    }
+
+    return vertices;
+}
+
 
 let buffers = [];
 
 
 function init() {
-    let verts = createCircleShape(1.2 + 0.3 * Math.random());
-        
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    });
-
-    verts = createRandomShape(1000, 2000);
-
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    });
-
-    //verts = createRandomShape(20, 30, 0.3);
-
-    verts = [];
-
-    let N = 30;
-    let d = 2 * Math.PI / N;
-
-    for (let i = 0; i < N; i++) {
-        verts.push(
-            Vector(
-                3 * (0.3 * Math.cos(i * d) + 0.05 * (2 * Math.random() - 1)),
-                0.3 * Math.sin(i * d) + 0.05 * (2 * Math.random() - 1),
-                1.0
-            )
-        );
-        verts.push(Colors.red);
-    }
-
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    });
-    
-    new VertexBuffer(convertObjectToArray(vertices));
+    buffers.push(new VertexBuffer(convertObjectToArray(createCircleShape(1.2 + 0.3 * Math.random())), 7));
+    buffers.push(new VertexBuffer(convertObjectToArray(createRandomShape(1000, 2000)), 7));
+    buffers.push(new VertexBuffer(convertObjectToArray(createSimpleShape()), 7));
 
     let vertexShader = new Shader(gl.VERTEX_SHADER, vsCode);
     let fragmentShader = new Shader(gl.FRAGMENT_SHADER, fsCode);
 
     Context.shaderProgram = new ShaderProgram(vertexShader, fragmentShader);
     Context.shaderProgram.bind();
-
-    console.log(buffers);
 }
 
 
@@ -330,10 +313,9 @@ layout['color'] = shaderAttribute(4, gl.FLOAT, 28, 12);
 
 function drawBackground() {
     for (let i = 0; i < 2; i++) {
-        buffers[i].buffer.bind();
-        buffers[i].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
+        buffers[i].connectToShaderAttributes(Context.shaderProgram, layout);
 
-        gl.drawArrays(i === 1 ? gl.POINTS : (gl.LINES), 0, buffers[i].size);
+        gl.drawArrays(i === 1 ? gl.POINTS : (gl.LINES), 0, buffers[i].length);
     }
 }
 
@@ -342,8 +324,8 @@ function update() {
     let timerLocation = gl.getUniformLocation(Context.shaderProgram.id, 'iTime');
     let resolutionLocation = gl.getUniformLocation(Context.shaderProgram.id, 'resolution');
 
-    timerStart = performance.now();
-    gl.uniform1f(timerLocation, timerStart / 1000.0);
+    timer = performance.now();
+    gl.uniform1f(timerLocation, timer / 1000.0);
     gl.uniform1f(resolutionLocation, canvas.height / canvas.width);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -357,10 +339,8 @@ function update() {
 
     drawBackground();
 
-    buffers[2].buffer.bind();
-    buffers[2].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
-
-    gl.drawArrays(getType(), 0, buffers[2].size);
+    buffers[2].connectToShaderAttributes(Context.shaderProgram, layout);
+    gl.drawArrays(getType(), 0, buffers[2].length);
 }
 
 

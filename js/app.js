@@ -7,12 +7,8 @@ import {gl, canvas} from "./context";
 
 function convertObjectToArray(object, array = []) {
     for (let key in object) {
-        if (typeof object[key] === 'object') {
-            convertObjectToArray(object[key], array);
-        }
-        else {
-            array.push(object[key]);
-        }
+        if (typeof object[key] === 'object') convertObjectToArray(object[key], array);
+        else array.push(object[key]);
     }
 
     return array;
@@ -36,7 +32,7 @@ function shaderAttribute(size, type, stride, offset) {
 }
 
 
-let timerStart = performance.now();
+let timer = performance.now();
 
 
 function Vector(...args) {
@@ -136,59 +132,48 @@ function createCircleShape(radius, center = Vector(0.0, 0.5, 1.0)) {
 }
 
 
+function createSimpleShape() {
+    let vertices = [];
+    let N = 3 + Math.floor(9 * Math.random());
+    let deltaAngle = 2 * Math.PI / N;
+    let center = Vector(0.0, -0.5);
 
-let vertices = createCircleShape(0.5 + 0.3 * Math.random());
+    for (let i = 0; i < N; i++) {
+        let position = Vector(
+            center.x + 0.3 * Math.cos(i * deltaAngle),
+            center.y + 0.3 * Math.sin(i * deltaAngle),
+            1.0
+        );
+
+        let t = 0.5 * Math.cos(i * deltaAngle) + 0.5;
+        let color = Vector(
+            Colors.cyan.x + t * (Colors.magenta.x - Colors.cyan.x),
+            Colors.cyan.y + t * (Colors.magenta.y - Colors.cyan.y),
+            Colors.cyan.z + t * (Colors.magenta.z - Colors.cyan.z),
+            0.5
+        );
+
+        vertices.push(position);
+        vertices.push(color);
+    }
+
+    return vertices;
+}
+
 
 let buffers = [];
 
 
 function init() {
-    let verts = createCircleShape(1.2 + 0.3 * Math.random());
-        
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    });
-
-    verts = createRandomShape(1000, 2000);
-
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    })
-
-    //verts = createRandomShape(20, 30, 0.3);
-
-    verts = [];
-
-    let N = 30;
-    let d = 2 * Math.PI / N;
-
-    for (let i = 0; i < N; i++) {
-        verts.push(
-            Vector(
-                3 * (0.3 * Math.cos(i * d) + 0.05 * (2 * Math.random() - 1)),
-                0.3 * Math.sin(i * d) + 0.05 * (2 * Math.random() - 1),
-                1.0
-            )
-        )
-        verts.push(Colors.red);
-    }
-
-    buffers.push({
-        buffer: new VertexBuffer(convertObjectToArray(verts)),
-        size: verts.length / 2
-    });
-    
-    let vertexBuffer = new VertexBuffer(convertObjectToArray(vertices));
+    buffers.push(new VertexBuffer(convertObjectToArray(createCircleShape(1.2 + 0.3 * Math.random())), 7));
+    buffers.push(new VertexBuffer(convertObjectToArray(createRandomShape(1000, 2000)), 7));
+    buffers.push(new VertexBuffer(convertObjectToArray(createSimpleShape()), 7));
 
     let vertexShader = new Shader(gl.VERTEX_SHADER, vsCode);
     let fragmentShader = new Shader(gl.FRAGMENT_SHADER, fsCode);
 
     Context.shaderProgram = new ShaderProgram(vertexShader, fragmentShader);
     Context.shaderProgram.bind();
-
-    console.log(buffers);
 }
 
 
@@ -199,10 +184,9 @@ layout['color'] = shaderAttribute(4, gl.FLOAT, 28, 12);
 
 function drawBackground() {
     for (let i = 0; i < 2; i++) {
-        buffers[i].buffer.bind();
-        buffers[i].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
+        buffers[i].connectToShaderAttributes(Context.shaderProgram, layout);
 
-        gl.drawArrays(i === 1 ? gl.POINTS : (gl.LINES), 0, buffers[i].size);
+        gl.drawArrays(i === 1 ? gl.POINTS : (gl.LINES), 0, buffers[i].length);
     }
 }
 
@@ -211,8 +195,8 @@ function update() {
     let timerLocation = gl.getUniformLocation(Context.shaderProgram.id, 'iTime');
     let resolutionLocation = gl.getUniformLocation(Context.shaderProgram.id, 'resolution');
 
-    timerStart = performance.now();
-    gl.uniform1f(timerLocation, timerStart / 1000.0);
+    timer = performance.now();
+    gl.uniform1f(timerLocation, timer / 1000.0);
     gl.uniform1f(resolutionLocation, canvas.height / canvas.width);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -226,10 +210,8 @@ function update() {
 
     drawBackground();
 
-    buffers[2].buffer.bind();
-    buffers[2].buffer.connectToShaderAttributes(Context.shaderProgram, layout);
-
-    gl.drawArrays(getType(), 0, buffers[2].size);
+    buffers[2].connectToShaderAttributes(Context.shaderProgram, layout);
+    gl.drawArrays(getType(), 0, buffers[2].length);
 }
 
 
